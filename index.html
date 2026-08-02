@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en" dir="rtl" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Polyglot Reader — vocabulary + audio</title>
+<style>
+  :root{
+    --bg:#f4f2ec; --panel:#ffffff; --ink:#1a1a1a; --muted:#6a6a66; --line:#e4e2da;
+    --teal:#1a6b6b; --teal-d:#0f5050;
+    --lvl-new:#fde3c4; --lvl-learning:#fbeecb;
+    --new-bd:#f0a35a; --learning-bd:#e8c65a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+  header{background:var(--teal);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;font-weight:600}
+  header .sub{font-size:12px;color:#bcdede}
+  header .headright{margin-left:auto;display:flex;align-items:center;gap:8px}
+  #langSelect{padding:8px 10px;border-radius:8px;border:none;font-size:13px;font-family:inherit;cursor:pointer}
+  .wrap{max-width:1050px;margin:0 auto;padding:18px 20px 80px}
+  .row{display:flex;gap:18px;flex-wrap:wrap}
+  .col-main{flex:1 1 620px;min-width:300px}
+  .col-side{flex:1 1 250px;min-width:230px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--teal);margin:0 0 10px}
+  textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:8px;padding:10px;
+    font-size:19px;line-height:1.9;font-family:inherit;resize:vertical;background:#fbfaf7}
+  input[type=text],input[type=password]{width:100%;padding:8px 10px;border:1px solid var(--line);
+    border-radius:8px;font:inherit;font-size:13px;margin:4px 0 8px;background:#fbfaf7}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+  button{font:inherit;font-size:13px;border:1px solid #cfd8d8;background:#fff;color:var(--ink);
+    padding:9px 14px;border-radius:8px;cursor:pointer;transition:background .12s;-webkit-tap-highlight-color:transparent}
+  button:hover{background:#f0f5f5}
+  button:active{transform:scale(.98)}
+  button.primary{background:var(--teal);color:#fff;border-color:var(--teal)}
+  button.primary:hover{background:var(--teal-d)}
+  button.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+  input[type=file]{display:none}
+  .filelabel{font-size:13px;border:1px solid #cfd8d8;background:#fff;padding:9px 14px;border-radius:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .filelabel:hover{background:#f0f5f5}
+
+  .audiobar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;
+    background:#f6faf9;border:1px solid var(--line);border-radius:10px}
+  audio{height:36px;max-width:100%}
+
+  .reader{font-size:23px;line-height:2.3;
+    font-family:"Segoe UI","Geeza Pro","Noto Naskh Arabic","Noto Sans JP",serif}
+  .line{padding:3px 6px;border-radius:6px;transition:background .15s}
+  .line.active{background:#e3f2f2;border-inline-start:3px solid var(--teal)}
+  .line.stamped{background:#eef7ee;border-inline-start:3px solid #7bc39a}
+  body.syncing .line{cursor:pointer}
+  body.syncing .line:hover{background:#d7efef}
+  .line.flash{animation:flash .5s ease}
+  @keyframes flash{0%{background:#bfe6c9}100%{background:#eef7ee}}
+
+  .syncbar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:none;
+    background:rgba(26,107,107,.97);color:#fff;padding:12px 16px;
+    box-shadow:0 -4px 20px rgba(0,0,0,.18)}
+  body.syncing .syncbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center}
+  .syncbar button{background:#fff;color:var(--teal);border:none;font-weight:600;padding:11px 18px;border-radius:10px;font-size:15px}
+  .syncbar button.sec{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.6);font-weight:500}
+  .syncbar .info{font-size:13px;color:#d5eeee;min-width:120px;text-align:center}
+  body.syncing .wrap{padding-bottom:100px}
+
+  .miniplay{position:fixed;left:50%;top:auto;bottom:16px;z-index:55;display:none;
+    align-items:center;gap:10px;background:rgba(26,107,107,.97);color:#fff;
+    padding:8px 10px 8px 8px;border-radius:40px;box-shadow:0 6px 24px rgba(0,0,0,.22);
+    touch-action:none;cursor:grab;user-select:none}
+  .miniplay.show{display:flex}
+  body.syncing .miniplay{display:none !important}
+  .miniplay button{background:#fff;color:var(--teal);border:none;width:40px;height:40px;border-radius:50%;
+    font-size:16px;font-weight:700;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
+  .miniplay .t{font-size:12px;color:#d5eeee;min-width:74px;text-align:center;font-variant-numeric:tabular-nums}
+  .miniplay .seek{width:120px}
+  .miniplay .drag{font-size:14px;color:#bcdede;padding:0 4px;cursor:grab}
+  @media(max-width:520px){.miniplay .seek{width:80px}}
+
+  .prog-tiles{display:flex;gap:10px;flex-wrap:wrap;margin:2px 0 6px}
+  .ptile{flex:1 1 90px;background:#f6faf9;border:1px solid var(--line);border-radius:10px;padding:10px 8px;text-align:center}
+  .ptile .n{font-size:22px;font-weight:700;color:var(--teal)}
+  .ptile .n.pos{color:#1d7a52}
+  .ptile .l{font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.3}
+  .chartbox{margin-top:10px}
+  .cbars{display:flex;align-items:flex-end;gap:6px;height:130px;padding-top:6px;border-bottom:1px solid var(--line)}
+  .cbar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;min-width:10px}
+  .cbar .fill{width:70%;background:var(--teal);border-radius:4px 4px 0 0;transition:height .2s}
+  .cbar .cap{font-size:9px;color:var(--muted);margin-top:3px;white-space:nowrap;transform:rotate(-35deg);transform-origin:center;height:20px}
+  .cbar .v{font-size:9.5px;color:var(--ink);margin-bottom:2px}
+  .snapline{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px dashed #ececec}
+  .snapline:last-child{border-bottom:none}
+  .snaprow-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+  .tok{border-radius:5px;padding:1px 3px;cursor:pointer;transition:background .1s}
+  .tok.new{background:var(--lvl-new);box-shadow:inset 0 -2px 0 var(--new-bd)}
+  .tok.learning{background:var(--lvl-learning);box-shadow:inset 0 -2px 0 var(--learning-bd)}
+  .tok.known{background:transparent}
+  .tok.ignored{background:transparent;color:#b6b4ad}
+  .tok:hover{background:#d7efef !important}
+  .tok.sel{outline:2px solid var(--teal);outline-offset:1px}
+  .punct{cursor:default}
+  .freqbadge{font-size:9.5px;font-weight:700;color:var(--teal);vertical-align:super;
+    margin-inline-start:1px;margin-inline-end:4px;cursor:default}
+  .navbar{display:flex;gap:8px;margin-bottom:14px}
+  .navbar button.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .bookcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+  .bookcard h3{margin:0 0 4px;font-size:15px}
+  .booklist-empty{color:var(--muted);font-size:14px;text-align:center;padding:30px 10px}
+
+  .stat{display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-bottom:1px dashed #ececec}
+  .stat:last-child{border-bottom:none}
+  .stat b{font-weight:600}
+  .pct-wrap{height:10px;background:#eee;border-radius:6px;overflow:hidden;margin:6px 0 2px}
+  .pct-bar{height:100%;background:var(--teal)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+  .legend span{display:flex;align-items:center;gap:5px}
+  .sw{width:14px;height:14px;border-radius:3px;display:inline-block}
+
+  .pop{position:fixed;z-index:50;background:#fff;border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 8px 30px rgba(0,0,0,.15);padding:14px;width:290px;display:none}
+  .pop .w{font-size:26px;text-align:right;font-weight:600;margin-bottom:4px}
+  .pop .lvlbtns{display:flex;gap:6px;margin:10px 0}
+  .pop .lvlbtns button{flex:1;padding:8px 0;font-size:12px}
+  .lb-new{border-color:var(--new-bd)} .lb-new.on{background:var(--lvl-new)}
+  .lb-learning{border-color:var(--learning-bd)} .lb-learning.on{background:var(--lvl-learning)}
+  .lb-known{border-color:#8bc7a2} .lb-known.on{background:#dcefe2}
+  .lb-ignored{border-color:#cfcdc6} .lb-ignored.on{background:#eceae3;color:#7a7873}
+  .pop label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  .pop textarea{min-height:60px;font-size:18px;margin-top:4px}
+  .pop .save{margin-top:10px;width:100%}
+  .pop .kbdhint{font-size:10.5px;color:var(--muted);margin-top:8px;line-height:1.5}
+  .muted{color:var(--muted);font-size:12.5px;line-height:1.6}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  .danger{color:#a33;border-color:#e0b4b4}.danger:hover{background:#faf0f0}
+  .hidden{display:none}
+  .empty{color:var(--muted);font-size:15px;text-align:center;padding:40px 10px;line-height:1.7}
+  details{margin-top:8px}
+  summary{cursor:pointer;font-size:12.5px;color:var(--muted)}
+  .chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);margin:4px 0}
+  code{background:#f0efe9;padding:1px 5px;border-radius:4px;font-size:11.5px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Polyglot Reader</h1>
+  <span class="sub">words saved on this device · audio can follow the text line by line</span>
+  <div class="headright">
+    <select id="langSelect" aria-label="Language"></select>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="navbar">
+    <button class="primary active" id="navReaderBtn">📖 Reader</button>
+    <button id="navLibraryBtn">📚 Library</button>
+  </div>
+
+  <div class="card hidden" id="libraryCard">
+    <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--teal);margin:0 0 10px">Library</h2>
+    <div class="controls" style="margin-bottom:14px">
+      <button class="primary" id="libNewBtn">+ New Book</button>
+      <button class="ghost" id="libVocabBtn">Vocabulary / Frequency List</button>
+      <span class="muted" id="libCount"></span>
+    </div>
+
+    <div class="bookcard" id="libFormCard" style="display:none;background:#fbfaf7">
+      <h3 id="libFormTitle">New Book</h3>
+      <label>Title</label>
+      <input type="text" id="libTitle" placeholder="e.g. Chapter 1 — The Market">
+      <label>Description</label>
+      <input type="text" id="libDesc" placeholder="Optional short description">
+      <label>Audio URL</label>
+      <input type="text" id="libAudioUrl" placeholder="audio/chapter1.mp3 or https://…">
+      <label>Text</label>
+      <textarea id="libText" placeholder="Paste the target-language text…" style="min-height:160px"></textarea>
+      <div class="controls">
+        <button class="primary" id="libSaveBtn">Save Book</button>
+        <button class="ghost" id="libCancelBtn">Cancel</button>
+      </div>
+    </div>
+
+    <div id="libList"></div>
+
+    <div id="libVocabView" style="display:none">
+      <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--teal);margin-top:16px">Vocabulary / Frequency List</h2>
+      <div class="muted" style="margin-bottom:8px">Top words by how often they appear across your saved Library texts (this language only).</div>
+      <div id="vocabList"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-main">
+      <div class="card" id="inputCard">
+        <h2>Add a transcript</h2>
+        <textarea id="input" placeholder="Paste text here…"></textarea>
+        <div class="controls">
+          <button class="primary" id="loadBtn">Read this</button>
+          <label class="filelabel">Upload .txt<input type="file" id="fileIn" accept=".txt,text/plain"></label>
+          <span class="muted" id="inputHint"></span>
+        </div>
+      </div>
+
+      <div class="card hidden" id="readerCard">
+        <div class="audiobar">
+          <label class="filelabel">Load audio<input type="file" id="audioIn" accept="audio/*"></label>
+          <audio id="player" controls preload="metadata"></audio>
+          <button id="syncToggle" class="hidden">Set line timings</button>
+          <button id="clearTimes" class="ghost hidden">Clear timings</button>
+          <span class="muted" id="syncHint"></span>
+        </div>
+        <div class="toolbar">
+          <button class="ghost" id="backBtn">← New text</button>
+          <button id="knowAllBtn">Mark all remaining as known</button>
+          <button class="ghost" id="saveToLibBtn">☆ Save to Library</button>
+          <span class="muted" id="tapHint">Tap a word to select it, then K/L/N/I to grade fast. Space = play/pause.</span>
+        </div>
+        <div class="reader" id="reader"></div>
+      </div>
+    </div>
+
+    <div class="col-side">
+      <div class="card">
+        <h2>This text</h2>
+        <div id="textStats"><div class="empty">Load a text to see your stats.</div></div>
+      </div>
+      <div class="card">
+        <h2>Your words in this language</h2>
+        <div class="stat"><span>Total words met</span><b id="gTotal">0</b></div>
+        <div class="stat"><span>Known</span><b id="gKnown">0</b></div>
+        <div class="stat"><span>Learning</span><b id="gLearning">0</b></div>
+        <div class="stat"><span>New / unknown</span><b id="gNew">0</b></div>
+        <div class="stat"><span>Ignored</span><b id="gIgnored">0</b></div>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--lvl-new);box-shadow:inset 0 -2px 0 var(--new-bd)"></i>New</span>
+          <span><i class="sw" style="background:var(--lvl-learning);box-shadow:inset 0 -2px 0 var(--learning-bd)"></i>Learning</span>
+          <span><i class="sw" style="background:#fff;border:1px solid #ddd"></i>Known</span>
+          <span><i class="sw" style="background:#eceae3"></i>Ignored</span>
+        </div>
+        <details>
+          <summary>Backup / restore this language</summary>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <button id="exportBtn">Export backup</button>
+            <label class="filelabel">Import backup<input type="file" id="importIn" accept=".json,application/json"></label>
+          </div>
+          <div class="muted" style="margin-top:8px">Saves this language's words + meanings to a file.</div>
+          <button class="danger" id="resetBtn" style="margin-top:10px">Reset this language</button>
+        </details>
+      </div>
+
+      <div class="card">
+        <h2>Cloud Sync (GitHub Gist)</h2>
+        <label>Personal Access Token (Classic)</label>
+        <input type="password" id="gistToken" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off" autocorrect="off" autocapitalize="off">
+        <label>Gist ID</label>
+        <input type="text" id="gistId" placeholder="e.g. 3b9a1c..." autocomplete="off" autocorrect="off" autocapitalize="off">
+        <div class="controls">
+          <button id="gistSaveCreds">Save credentials</button>
+          <button id="gistPush">Push to Cloud</button>
+          <button id="gistPull">Pull from Cloud</button>
+        </div>
+        <label class="chk"><input type="checkbox" id="autoSyncChk"> Auto-sync silently on every word change</label>
+        <div class="muted" id="gistStatus" style="margin-top:6px;word-break:break-word"></div>
+        <div class="muted" style="margin-top:8px">
+          <b>Mobile Note:</b> Use a <i>Personal Access Token (Classic)</i> with the <code>gist</code> scope checked.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Progress</h2>
+        <p id="progSince" style="font-size:12px;color:var(--muted);margin:0 0 8px;font-style:italic"></p>
+        <div class="prog-tiles">
+          <div class="ptile"><div class="n pos" id="pNewKnown">0</div><div class="l">→ Known<br>this week</div></div>
+          <div class="ptile"><div class="n" id="pNewMet">0</div><div class="l">New words<br>met this week</div></div>
+          <div class="ptile"><div class="n" id="pKnownTotal">0</div><div class="l">Known<br>total</div></div>
+        </div>
+        <div class="chartbox">
+          <div class="muted" style="font-size:11.5px;margin-bottom:2px">Known words over time</div>
+          <div class="cbars" id="knownChart"></div>
+        </div>
+        <div class="snaprow-actions">
+          <button id="snapBtn">Snapshot this week</button>
+          <button class="ghost" id="snapInfoBtn" title="How snapshots work">?</button>
+        </div>
+        <div class="muted" id="snapHint" style="margin-top:6px"></div>
+        <details>
+          <summary>Snapshot history</summary>
+          <div id="snapList" style="margin-top:8px"></div>
+        </details>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="miniplay" id="miniplay">
+  <span class="drag" title="Drag me">⠿</span>
+  <button id="mpPlay" aria-label="Play or pause">▶</button>
+  <span class="t" id="mpTime">0:00 / 0:00</span>
+  <input type="range" id="mpSeek" class="seek" min="0" max="1000" value="0" aria-label="Seek">
+</div>
+
+<div class="syncbar" id="syncbar">
+  <button id="sbPlay">⏸ Pause</button>
+  <span class="info" id="sbInfo">Tap each line as it's spoken</span>
+  <button class="sec" id="sbUndo">↶ Undo last</button>
+  <button id="sbDone">✓ Done</button>
+</div>
+
+<div class="pop" id="pop">
+  <div class="w" id="popWord"></div>
+  <div class="muted" id="popSeen"></div>
+  <div class="muted" id="popFreq"></div>
+  <div class="lvlbtns">
+    <button class="lb-new" data-lvl="new">New</button>
+    <button class="lb-learning" data-lvl="learning">Learning</button>
+    <button class="lb-known" data-lvl="known">Known</button>
+    <button class="lb-ignored" data-lvl="ignored">Ignore</button>
+  </div>
+  <label>Meaning</label>
+  <textarea id="popDef" placeholder="Type meaning…"></textarea>
+  <button class="primary save" id="popSave">Save</button>
+  <div class="kbdhint">Shortcuts (word selected, not typing): K=Known · L=Learning · N=New · I=Ignore · Space=Play/Pause</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============== LANGUAGE PROFILES ============== */
+  var LANGS=[
+    {code:"ar",name:"العربية",dir:"rtl"},
+    {code:"es",name:"Español",dir:"ltr"},
+    {code:"de",name:"Deutsch",dir:"ltr"},
+    {code:"el",name:"Ελληνικά",dir:"ltr"},
+    {code:"id",name:"Bahasa Indonesia",dir:"ltr"},
+    {code:"ja",name:"日本語",dir:"ltr"}
+  ];
+  function langMeta(code){ for(var i=0;i<LANGS.length;i++) if(LANGS[i].code===code) return LANGS[i]; return LANGS[0]; }
+
+  var currentLang = localStorage.getItem("polyglot.currentLang") || "ar";
+  function keyFor(lang,kind){ return "polyglot."+lang+"."+kind; }
+
+  var words={}, timings={}, snaps=[], library=[], wordStats={};
+
+  function loadJSON(k,def){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?def:v; }catch(e){return def;} }
+  function saveWords(){ try{localStorage.setItem(keyFor(currentLang,"words"),JSON.stringify(words));}catch(e){} scheduleAutoSync(); }
+  function saveTimings(){ try{localStorage.setItem(keyFor(currentLang,"timings"),JSON.stringify(timings));}catch(e){} scheduleAutoSync(); }
+  function saveSnaps(){ try{localStorage.setItem(keyFor(currentLang,"snaps"),JSON.stringify(snaps));}catch(e){} scheduleAutoSync(); }
+  function saveLibrary(){ try{localStorage.setItem(keyFor(currentLang,"library"),JSON.stringify(library));}catch(e){} scheduleAutoSync(); }
+  function saveWordStats(){ try{localStorage.setItem(keyFor(currentLang,"wordStats"),JSON.stringify(wordStats));}catch(e){} }
+
+  function loadLangData(){
+    words=loadJSON(keyFor(currentLang,"words"),{});
+    timings=loadJSON(keyFor(currentLang,"timings"),{});
+    snaps=loadJSON(keyFor(currentLang,"snaps"),[]);
+    library=loadJSON(keyFor(currentLang,"library"),[]);
+    wordStats=loadJSON(keyFor(currentLang,"wordStats"),{});
+    recomputeWordStats(); // always derive fresh from library rather than trust the cached copy
+  }
+
+  function applyDirection(){
+    var meta=langMeta(currentLang);
+    document.getElementById("htmlRoot").setAttribute("dir",meta.dir);
+    document.getElementById("input").setAttribute("dir",meta.dir);
+    document.getElementById("reader").setAttribute("dir",meta.dir);
+    document.getElementById("popDef").setAttribute("dir",meta.dir);
+    document.getElementById("popWord").style.textAlign = (meta.dir==="rtl") ? "right":"left";
+  }
+
+  function populateLangSelect(){
+    var sel=document.getElementById("langSelect");
+    sel.innerHTML="";
+    LANGS.forEach(function(l){
+      var opt=document.createElement("option");
+      opt.value=l.code; opt.textContent=l.name;
+      if(l.code===currentLang) opt.selected=true;
+      sel.appendChild(opt);
+    });
+  }
+  document.getElementById("langSelect").addEventListener("change",function(e){
+    switchLanguage(e.target.value);
+  });
+
+  function switchLanguage(code){
+    currentLang=code;
+    localStorage.setItem("polyglot.currentLang",code);
+    loadLangData();
+    applyDirection();
+    currentLines=[]; lineTimes=[]; textHash=null;
+    currentBookId=null; openedFromLibrarySession=false;
+    document.getElementById("input").value="";
+    document.getElementById("player").pause();
+    document.getElementById("player").removeAttribute("src");
+    document.getElementById("miniplay").classList.remove("show");
+    closePop();
+    showView("reader");
+    maybeAutoSnapshot();
+    refreshStats();
+  }
+
+  /* ============== VIEW SWITCHING ============== */
+  function setNavActive(v){
+    document.getElementById("navReaderBtn").classList.toggle("active",v==="reader");
+    document.getElementById("navReaderBtn").classList.toggle("primary",v==="reader");
+    document.getElementById("navLibraryBtn").classList.toggle("active",v==="library");
+    document.getElementById("navLibraryBtn").classList.toggle("primary",v==="library");
+  }
+  function showView(v){
+    var lib=document.getElementById("libraryCard"), input=document.getElementById("inputCard"), rdr=document.getElementById("readerCard");
+    setNavActive(v);
+    if(v==="library"){
+      lib.classList.remove("hidden"); input.classList.add("hidden"); rdr.classList.add("hidden");
+      renderLibraryList();
+    } else {
+      lib.classList.add("hidden");
+      if(currentLines.length){ rdr.classList.remove("hidden"); input.classList.add("hidden"); }
+      else { input.classList.remove("hidden"); rdr.classList.add("hidden"); }
+    }
+  }
+  document.getElementById("navReaderBtn").addEventListener("click",function(){ showView("reader"); });
+  document.getElementById("navLibraryBtn").addEventListener("click",function(){ showView("library"); });
+
+  /* ============== LIBRARY CRUD ============== */
+  var editingBookId=null;
+  var libFormCard=document.getElementById("libFormCard"), libVocabView=document.getElementById("libVocabView");
+
+  function openBookForm(id){
+    editingBookId=id;
+    var b=id?findBook(id):null;
+    document.getElementById("libFormTitle").textContent=b?"Edit Book":"New Book";
+    document.getElementById("libTitle").value=b?(b.title||""):"";
+    document.getElementById("libDesc").value=b?(b.description||""):"";
+    document.getElementById("libAudioUrl").value=b?(b.audioUrl||""):"";
+    document.getElementById("libText").value=b?(b.text||""):"";
+    libFormCard.style.display="block";
+    libVocabView.style.display="none";
+    libFormCard.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+  function editBook(id){ openBookForm(id); }
+  function deleteBook(id){
+    var b=findBook(id); if(!b)return;
+    if(!confirm('Delete "'+(b.title||"this book")+'" from your Library? This also removes its saved line timings. This cannot be undone.'))return;
+    library=library.filter(function(x){return x.id!==id;});
+    if(currentBookId===id) currentBookId=null;
+    saveLibrary(); recomputeWordStats(); renderLibraryList();
+  }
+
+  document.getElementById("libNewBtn").addEventListener("click",function(){ openBookForm(null); });
+  document.getElementById("libCancelBtn").addEventListener("click",function(){ libFormCard.style.display="none"; editingBookId=null; });
+  document.getElementById("libSaveBtn").addEventListener("click",function(){
+    var title=document.getElementById("libTitle").value.trim();
+    var text=document.getElementById("libText").value;
+    var desc=document.getElementById("libDesc").value.trim();
+    var audioUrl=document.getElementById("libAudioUrl").value.trim();
+    if(!title){ alert("Please give the book a title."); return; }
+    if(!text.trim()){ alert("Please paste some text."); return; }
+    var newLineCount=splitLines(text).length;
+    if(editingBookId){
+      var b=findBook(editingBookId);
+      if(b){
+        var textChanged = text!==b.text;
+        var oldLineCount = splitLines(b.text||"").length;
+        b.title=title; b.description=desc; b.audioUrl=audioUrl; b.text=text;
+        if(textChanged && oldLineCount!==newLineCount){ b.timings=new Array(newLineCount).fill(null); }
+        else if(!b.timings || b.timings.length!==newLineCount){ b.timings=new Array(newLineCount).fill(null); }
+        if(currentBookId===editingBookId){ lineTimes=b.timings.slice(); }
+      }
+    } else {
+      library.push({
+        id: genId(), title: title, description: desc, text: text, audioUrl: audioUrl,
+        timings: new Array(newLineCount).fill(null), createdDate: todayStr()
+      });
+    }
+    saveLibrary(); recomputeWordStats();
+    libFormCard.style.display="none"; editingBookId=null;
+    renderLibraryList();
+    if(currentLines.length) render();
+  });
+
+  function renderLibraryList(){
+    var box=document.getElementById("libList");
+    gt("libCount", library.length+(library.length===1?" book":" books"));
+    if(!library.length){ box.innerHTML='<div class="booklist-empty">No books yet — add your first one above, or open a text in the Reader and use "Save to Library".</div>'; return; }
+    box.innerHTML="";
+    library.slice().sort(function(a,b){ return (b.createdDate||"").localeCompare(a.createdDate||""); }).forEach(function(b){
+      var lineCount=splitLines(b.text||"").length;
+      var el=document.createElement("div"); el.className="bookcard";
+      el.innerHTML =
+        "<h3>"+escapeHtml(b.title||"Untitled")+"</h3>"+
+        (b.description?'<div class="muted" style="margin-bottom:6px">'+escapeHtml(b.description)+"</div>":"")+
+        '<div class="muted">'+lineCount+" lines · "+(b.audioUrl?"🔊 audio linked":"no audio")+(b.createdDate?" · "+b.createdDate:"")+"</div>";
+      var ctrls=document.createElement("div"); ctrls.className="controls"; ctrls.style.marginTop="10px";
+      var openBtn=document.createElement("button"); openBtn.className="primary"; openBtn.textContent="Open";
+      openBtn.addEventListener("click",function(){ openBook(b.id); });
+      var editBtn=document.createElement("button"); editBtn.textContent="Edit";
+      editBtn.addEventListener("click",function(){ editBook(b.id); });
+      var delBtn=document.createElement("button"); delBtn.className="danger"; delBtn.textContent="Delete";
+      delBtn.addEventListener("click",function(){ deleteBook(b.id); });
+      ctrls.appendChild(openBtn); ctrls.appendChild(editBtn); ctrls.appendChild(delBtn);
+      el.appendChild(ctrls);
+      box.appendChild(el);
+    });
+  }
+
+  document.getElementById("libVocabBtn").addEventListener("click",function(){
+    var showing=libVocabView.style.display==="block";
+    libVocabView.style.display=showing?"none":"block";
+    libFormCard.style.display="none";
+    if(!showing) renderVocabList();
+  });
+  function renderVocabList(){
+    var box=document.getElementById("vocabList");
+    var entries=Object.keys(wordStats).map(function(n){ return {norm:n,count:wordStats[n],lvl:levelOf(n)}; });
+    entries.sort(function(a,b){ return b.count-a.count; });
+    entries=entries.slice(0,50);
+    if(!entries.length){ box.innerHTML='<div class="booklist-empty">No words indexed yet — add some books to your Library.</div>'; return; }
+    box.innerHTML="";
+    entries.forEach(function(e){
+      var row=document.createElement("div"); row.className="snapline";
+      row.innerHTML='<span>'+escapeHtml(e.norm)+' <span class="muted" style="font-size:11px">('+e.lvl+')</span></span><span><b>'+e.count+"×</b></span>";
+      box.appendChild(row);
+    });
+  }
+
+  /* ============== TOKENIZERS ============== */
+  function normalizeArabic(w){
+    return w.replace(/[\u0640]/g,"")
+      .replace(/[\u064B-\u065F\u0670]/g,"")
+      .replace(/[\u0610-\u061A\u06D6-\u06ED]/g,"").trim();
+  }
+  function tokenizeArabic(text){
+    var out=[], re=/([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+)|([^\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+)/g,m;
+    while((m=re.exec(text))!==null){
+      if(m[1]) out.push({type:"word",raw:m[1],norm:normalizeArabic(m[1])});
+      else out.push({type:"punct",raw:m[2]});
+    }
+    return out;
+  }
+  function tokenizeGeneric(text){
+    var out=[], re, m;
+    try{ re=/([\p{L}\p{N}]+)|([^\p{L}\p{N}]+)/gu; }
+    catch(e){ re=/([A-Za-zÀ-ÖØ-öø-ÿ0-9]+)|([^A-Za-zÀ-ÖØ-öø-ÿ0-9]+)/g; }
+    while((m=re.exec(text))!==null){
+      if(m[1]) out.push({type:"word",raw:m[1],norm:m[1].toLowerCase()});
+      else out.push({type:"punct",raw:m[2]});
+    }
+    return out;
+  }
+  function tokenizeJapanese(text){
+    if(window.Intl && Intl.Segmenter){
+      try{
+        var seg=new Intl.Segmenter("ja",{granularity:"word"});
+        var arr=Array.from(seg.segment(text)), out=[];
+        arr.forEach(function(r){
+          if(r.isWordLike) out.push({type:"word",raw:r.segment,norm:r.segment});
+          else out.push({type:"punct",raw:r.segment});
+        });
+        return out;
+      }catch(e){}
+    }
+    var out2=[], re2=/([\u3040-\u30FF\u3400-\u9FFF]+)|([^\u3040-\u30FF\u3400-\u9FFF]+)/g,m2;
+    while((m2=re2.exec(text))!==null){
+      if(m2[1]) out2.push({type:"word",raw:m2[1],norm:m2[1]});
+      else out2.push({type:"punct",raw:m2[2]});
+    }
+    return out2;
+  }
+  function tokenizeForLang(lang,text){
+    if(lang==="ar") return tokenizeArabic(text);
+    if(lang==="ja") return tokenizeJapanese(text);
+    return tokenizeGeneric(text);
+  }
+  function tokenizeLine(text){ return tokenizeForLang(currentLang,text); }
+  function splitSentences(ln){
+    var res=[],cur="";
+    for(var i=0;i<ln.length;i++){
+      cur+=ln[i];
+      if(/[.\!\?\u061F\u2026。！？]/.test(ln[i])){
+        while(i+1<ln.length && /\s/.test(ln[i+1])){cur+=ln[i+1];i++;}
+        res.push(cur.trim()); cur="";
+      }
+    }
+    if(cur.trim())res.push(cur.trim());
+    return res;
+  }
+  function splitLines(text){
+    var raw=text.replace(/\r/g,"").split(/\n+/), out=[];
+    raw.forEach(function(ln){ ln=ln.trim(); if(!ln)return;
+      splitSentences(ln).forEach(function(s){ if(s)out.push(s); }); });
+    return out;
+  }
+  function hashStr(s){ var h=5381,i=s.length; while(i)h=(h*33)^s.charCodeAt(--i); return (h>>>0).toString(36); }
+
+  /* ============== WORD FREQUENCY (derived from Library) ============== */
+  function computeWordStatsForLibrary(lang,lib){
+    var stats={};
+    (lib||[]).forEach(function(book){
+      splitLines(book.text||"").forEach(function(ln){
+        tokenizeForLang(lang,ln).forEach(function(t){
+          if(t.type==="word" && t.norm) stats[t.norm]=(stats[t.norm]||0)+1;
+        });
+      });
+    });
+    return stats;
+  }
+  function recomputeWordStats(){
+    wordStats=computeWordStatsForLibrary(currentLang,library);
+    saveWordStats();
+  }
+
+  /* ============== STATE ============== */
+  var currentLines=[], lineEls=[], lineTimes=[], textHash=null;
+  var selectedNorm=null, selectedEl=null, pendingLvl="new";
+  var syncing=false, activeLineIdx=-1;
+  var currentBookId=null, openedFromLibrarySession=false;
+
+  function escapeHtml(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function genId(){ return "b_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8); }
+  function findBook(id){ for(var i=0;i<library.length;i++) if(library[i].id===id) return library[i]; return null; }
+
+  function levelOf(n){ var r=words[n]; return r?r.lvl:"new"; }
+  function allWordTokens(){ var a=[]; currentLines.forEach(function(l){ l.tokens.forEach(function(t){ if(t.type==="word")a.push(t); }); }); return a; }
+
+  var reader=document.getElementById("reader");
+  function render(){
+    reader.innerHTML=""; lineEls=[];
+    currentLines.forEach(function(line,li){
+      var div=document.createElement("div"); div.className="line"; div.dataset.li=li;
+      div.addEventListener("click", function(ev){
+        if(syncing){ ev.stopPropagation(); ev.preventDefault(); stampLine(li); }
+      }, true);
+      line.tokens.forEach(function(t){
+        if(t.type==="punct"){ var s=document.createElement("span"); s.className="punct"; s.textContent=t.raw; div.appendChild(s); return; }
+        var span=document.createElement("span");
+        span.className="tok "+levelOf(t.norm);
+        span.textContent=t.raw; span.dataset.norm=t.norm;
+        span.addEventListener("click", function(ev){ if(syncing)return; ev.stopPropagation(); openPop(t.norm,span,ev); });
+        div.appendChild(span);
+        var freq=wordStats[t.norm]||0;
+        if(freq>1){
+          var badge=document.createElement("sup"); badge.className="freqbadge";
+          badge.textContent=freq; badge.title="Encountered "+freq+"× across your Library";
+          div.appendChild(badge);
+        }
+      });
+      if(lineTimes[li]!=null) div.classList.add("stamped");
+      reader.appendChild(div); lineEls.push(div);
+    });
+    refreshStats();
+  }
+
+  function uniqueNorms(){ var set={}; allWordTokens().forEach(function(t){ if(t.norm)set[t.norm]=true; }); return Object.keys(set); }
+  function refreshStats(){
+    var g={total:0,known:0,learning:0,new:0,ignored:0};
+    Object.keys(words).forEach(function(k){ g.total++; var l=words[k].lvl;
+      if(l==="known")g.known++; else if(l==="learning")g.learning++; else if(l==="ignored")g.ignored++; else g.new++; });
+    gt("gTotal",g.total);gt("gKnown",g.known);gt("gLearning",g.learning);gt("gNew",g.new);gt("gIgnored",g.ignored);
+    renderProgress();
+    var box=document.getElementById("textStats");
+    if(!currentLines.length){ box.innerHTML='<div class="empty">Load a text to see your stats.</div>'; return; }
+    var norms=uniqueNorms(), totalW=allWordTokens().length, known=0,learning=0,ignored=0,newHere=0;
+    norms.forEach(function(n){ var r=words[n]; if(!r){newHere++;return;}
+      if(r.lvl==="known")known++; else if(r.lvl==="learning")learning++; else if(r.lvl==="ignored")ignored++; });
+    var comfortable=known+ignored, pct=norms.length?Math.round(comfortable/norms.length*100):0;
+    box.innerHTML='<div class="pct-wrap"><div class="pct-bar" style="width:'+pct+'%"></div></div>'+
+      '<div class="stat"><span>You already know</span><b>'+pct+'%</b></div>'+
+      '<div class="stat"><span>Unique words</span><b>'+norms.length+'</b></div>'+
+      '<div class="stat"><span>Total words</span><b>'+totalW+'</b></div>'+
+      '<div class="stat"><span>New to you here</span><b>'+newHere+'</b></div>'+
+      '<div class="stat"><span>Known</span><b>'+known+'</b></div>'+
+      '<div class="stat"><span>Learning</span><b>'+learning+'</b></div>';
+  }
+  function gt(id,v){ document.getElementById(id).textContent=v; }
+
+  /* ============== PROGRESS / SNAPSHOTS ============== */
+  function currentCounts(){
+    var g={total:0,known:0,learning:0,new:0,ignored:0};
+    Object.keys(words).forEach(function(k){ g.total++; var l=words[k].lvl;
+      if(l==="known")g.known++; else if(l==="learning")g.learning++; else if(l==="ignored")g.ignored++; else g.new++; });
+    return g;
+  }
+  function todayStr(){ var d=new Date(); return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
+  function daysBetween(a,b){ return Math.round((b-a)/86400000); }
+
+  function maybeAutoSnapshot(){
+    var now=Date.now();
+    if(!snaps.length){ takeSnapshot(true); return; }
+    var last=snaps[snaps.length-1];
+    if(daysBetween(last.ts, now) >= 7) takeSnapshot(true);
+  }
+  function takeSnapshot(auto){
+    var g=currentCounts(), t=todayStr();
+    var last=snaps[snaps.length-1];
+    if(last && last.date===t){ last.known=g.known; last.learning=g.learning; last.new=g.new; last.ignored=g.ignored; last.total=g.total; last.ts=Date.now(); }
+    else { snaps.push({date:t, ts:Date.now(), known:g.known, learning:g.learning, new:g.new, ignored:g.ignored, total:g.total}); }
+    saveSnaps();
+    renderProgress();
+    if(!auto){ document.getElementById("snapHint").textContent="Snapshot saved for "+t+"."; }
+  }
+  function renderProgress(){
+    var g=currentCounts();
+    var t=todayStr(), baseline=null;
+    for(var i=snaps.length-1;i>=0;i--){ if(snaps[i].date!==t){ baseline=snaps[i]; break; } }
+    if(!baseline && snaps.length) baseline=snaps[0];
+    var newKnown = baseline? Math.max(0, g.known - baseline.known) : 0;
+    var newMet   = baseline? Math.max(0, g.total - baseline.total) : g.total;
+    gt("pNewKnown", "+"+newKnown);
+    gt("pNewMet", "+"+newMet);
+    gt("pKnownTotal", g.known);
+    var since=document.getElementById("progSince");
+    if(baseline){ since.textContent="Since "+baseline.date+" ("+daysBetween(baseline.ts,Date.now())+" days ago)"; }
+    else { since.textContent="Take your first snapshot to start tracking week-on-week."; }
+    renderKnownChart();
+    renderSnapList();
+  }
+  function renderKnownChart(){
+    var box=document.getElementById("knownChart"); box.innerHTML="";
+    var pts=snaps.map(function(s){return {label:s.date.slice(5), known:s.known};});
+    var g=currentCounts();
+    var lastSnap=snaps.length?snaps[snaps.length-1]:null;
+    if(!lastSnap || lastSnap.date!==todayStr()) pts.push({label:"now", known:g.known});
+    if(!pts.length){ box.innerHTML='<div class="muted" style="font-size:11.5px">No snapshots yet.</div>'; return; }
+    var max=Math.max.apply(null,pts.map(function(p){return p.known;}))||1;
+    var show=pts.slice(-10);
+    show.forEach(function(p){
+      var bar=document.createElement("div"); bar.className="cbar";
+      var v=document.createElement("div"); v.className="v"; v.textContent=p.known;
+      var fill=document.createElement("div"); fill.className="fill"; fill.style.height=Math.max(3,(p.known/max*100))+"%";
+      var cap=document.createElement("div"); cap.className="cap"; cap.textContent=p.label;
+      bar.appendChild(v); bar.appendChild(fill); bar.appendChild(cap); box.appendChild(bar);
+    });
+  }
+  function renderSnapList(){
+    var box=document.getElementById("snapList"); box.innerHTML="";
+    if(!snaps.length){ box.innerHTML='<div class="muted" style="font-size:12px">No snapshots yet.</div>'; return; }
+    snaps.slice().reverse().forEach(function(s,idx){
+      var realIdx=snaps.length-1-idx;
+      var row=document.createElement("div"); row.className="snapline";
+      row.innerHTML="<span>"+s.date+"</span><span>known <b>"+s.known+"</b> · learning "+s.learning+"</span>";
+      var del=document.createElement("button"); del.className="danger"; del.textContent="×"; del.style.marginLeft="8px";
+      del.addEventListener("click",function(){ snaps.splice(realIdx,1); saveSnaps(); renderProgress(); });
+      row.appendChild(del); box.appendChild(row);
+    });
+  }
+  document.getElementById("snapBtn").addEventListener("click",function(){ takeSnapshot(false); });
+  document.getElementById("snapInfoBtn").addEventListener("click",function(){
+    alert("Snapshots record your word counts on a date.\n\nThe app takes one automatically about once a week, and you can also press 'Snapshot this week' anytime.\n\n'→ Known this week' and 'New words met this week' compare now against your previous snapshot.");
+  });
+
+  /* ============== POPUP ============== */
+  var pop=document.getElementById("pop"),popWord=document.getElementById("popWord"),
+      popDef=document.getElementById("popDef"),popSeen=document.getElementById("popSeen"),
+      popFreq=document.getElementById("popFreq"),
+      lvlBtns=pop.querySelectorAll(".lvlbtns button");
+  function openPop(norm,el,ev){
+    selectedNorm=norm; if(selectedEl)selectedEl.classList.remove("sel"); selectedEl=el; el.classList.add("sel");
+    var r=words[norm]||{lvl:"new",def:"",seen:0};
+    popWord.textContent=el.textContent; popDef.value=r.def||""; pendingLvl=r.lvl||"new"; setLvl(pendingLvl);
+    popSeen.textContent=r.seen?("saved before"):"first time you've saved this word";
+    var freq=wordStats[norm]||0;
+    popFreq.textContent = freq>0 ? ("Encountered "+freq+"× across your Library") : "Not yet in your saved Library texts";
+    var x=ev.clientX,y=ev.clientY,W=window.innerWidth,H=window.innerHeight;
+    pop.style.display="block"; var pw=pop.offsetWidth,ph=pop.offsetHeight;
+    if(x+pw+12>W)x=W-pw-12; if(x<8)x=8; if(y+ph+12>H)y=H-ph-12; if(y<8)y=8;
+    pop.style.left=x+"px"; pop.style.top=y+"px";
+  }
+  function setLvl(l){ lvlBtns.forEach(function(b){ b.classList.toggle("on",b.dataset.lvl===l); }); }
+  lvlBtns.forEach(function(b){ b.addEventListener("click",function(){ pendingLvl=b.dataset.lvl; setLvl(pendingLvl); }); });
+  function closePop(){ pop.style.display="none"; if(selectedEl){selectedEl.classList.remove("sel");selectedEl=null;} selectedNorm=null; }
+  document.getElementById("popSave").addEventListener("click",function(){
+    if(!selectedNorm)return; var prev=words[selectedNorm];
+    words[selectedNorm]={lvl:pendingLvl,def:popDef.value.trim(),seen:prev?(prev.seen||1):1}; saveWords();
+    reader.querySelectorAll('.tok').forEach(function(t){ if(t.dataset.norm===selectedNorm) t.className="tok "+pendingLvl+(t===selectedEl?" sel":""); });
+    refreshStats(); closePop();
+  });
+  document.addEventListener("click",function(e){
+    if(pop.style.display==="block" && !pop.contains(e.target) && !e.target.classList.contains("tok")) closePop();
+  });
+
+  function gradeSelected(lvl){
+    if(!selectedNorm)return;
+    pendingLvl=lvl; setLvl(lvl);
+    var prev=words[selectedNorm];
+    words[selectedNorm]={lvl:lvl,def:(prev&&prev.def)||"",seen:prev?(prev.seen||1):1}; saveWords();
+    reader.querySelectorAll('.tok').forEach(function(t){ if(t.dataset.norm===selectedNorm) t.className="tok "+lvl+(t===selectedEl?" sel":""); });
+    refreshStats(); closePop();
+  }
+
+  /* ============== GLOBAL KEYBOARD SHORTCUTS ============== */
+  document.addEventListener("keydown",function(e){
+    var ae=document.activeElement, tag=ae && ae.tagName;
+    if(tag==="TEXTAREA" || tag==="INPUT") return;
+    if(e.key==="Escape"){ closePop(); return; }
+    var k=e.key.toLowerCase();
+    if(k===" "){
+      if(!player.src) return;
+      e.preventDefault();
+      if(player.paused){ player.play().catch(function(){}); } else { player.pause(); }
+      return;
+    }
+    if(!currentLines.length) return;
+    if(k==="k") gradeSelected("known");
+    else if(k==="l") gradeSelected("learning");
+    else if(k==="n") gradeSelected("new");
+    else if(k==="i") gradeSelected("ignored");
+  });
+
+  /* ============== LOAD TEXT ============== */
+  function loadText(text){
+    currentBookId=null; openedFromLibrarySession=false;
+    currentLines=splitLines(text).map(function(raw){ return {raw:raw,tokens:tokenizeLine(raw)}; });
+    textHash=hashStr(text);
+    lineTimes=(timings[textHash]&&timings[textHash].length===currentLines.length)? timings[textHash].slice() : currentLines.map(function(){return null;});
+    document.getElementById("libraryCard").classList.add("hidden");
+    document.getElementById("inputCard").classList.add("hidden");
+    document.getElementById("readerCard").classList.remove("hidden");
+    setNavActive("reader");
+    activeLineIdx=-1; render();
+    updateAudioUI();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  function openBook(id){
+    var b=findBook(id); if(!b)return;
+    currentBookId=id; openedFromLibrarySession=true;
+    currentLines=splitLines(b.text||"").map(function(raw){ return {raw:raw,tokens:tokenizeLine(raw)}; });
+    textHash=hashStr(b.text||"");
+    lineTimes=(b.timings && b.timings.length===currentLines.length)? b.timings.slice() : currentLines.map(function(){return null;});
+    document.getElementById("libraryCard").classList.add("hidden");
+    document.getElementById("inputCard").classList.add("hidden");
+    document.getElementById("readerCard").classList.remove("hidden");
+    setNavActive("reader");
+    activeLineIdx=-1; render();
+    if(audioURL){ URL.revokeObjectURL(audioURL); audioURL=null; }
+    if(b.audioUrl){
+      player.src=b.audioUrl; haveAudio=true;
+      document.getElementById("miniplay").classList.add("show"); mpSetPlaying();
+    } else {
+      haveAudio=false; player.removeAttribute("src"); player.load();
+      document.getElementById("miniplay").classList.remove("show");
+    }
+    updateAudioUI();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+  document.getElementById("loadBtn").addEventListener("click",function(){
+    var t=document.getElementById("input").value.trim();
+    if(!t){ document.getElementById("inputHint").textContent="Paste some text first."; return; }
+    loadText(t);
+  });
+  document.getElementById("fileIn").addEventListener("change",function(e){
+    var f=e.target.files[0]; if(!f)return; var rd=new FileReader();
+    rd.onload=function(){ document.getElementById("input").value=rd.result; loadText(rd.result); }; rd.readAsText(f,"utf-8");
+  });
+  document.getElementById("backBtn").addEventListener("click",function(){
+    var goLibrary=openedFromLibrarySession;
+    currentBookId=null; openedFromLibrarySession=false;
+    currentLines=[]; lineTimes=[]; stopSync(); refreshStats();
+    player.pause();
+    document.getElementById("miniplay").classList.remove("show");
+    if(goLibrary){ showView("library"); }
+    else{
+      document.getElementById("readerCard").classList.add("hidden");
+      document.getElementById("inputCard").classList.remove("hidden");
+    }
+  });
+  document.getElementById("saveToLibBtn").addEventListener("click",function(){
+    if(!currentLines.length)return;
+    showView("library");
+    openBookForm(null);
+    document.getElementById("libText").value=currentLines.map(function(l){return l.raw;}).join("\n");
+  });
+  document.getElementById("knowAllBtn").addEventListener("click",function(){
+    if(!currentLines.length)return; if(!confirm("Mark every not-yet-rated word in this text as Known?"))return;
+    uniqueNorms().forEach(function(n){ var r=words[n]; if(!r)words[n]={lvl:"known",def:"",seen:1}; else if(r.lvl==="new")r.lvl="known"; });
+    saveWords(); render();
+  });
+
+  /* ============== AUDIO + LINE SYNC ============== */
+  var player=document.getElementById("player"),
+      audioIn=document.getElementById("audioIn"),
+      syncToggle=document.getElementById("syncToggle"),
+      clearTimes=document.getElementById("clearTimes"),
+      syncHint=document.getElementById("syncHint"),
+      syncbar=document.getElementById("syncbar"),
+      sbPlay=document.getElementById("sbPlay"),
+      sbUndo=document.getElementById("sbUndo"),
+      sbDone=document.getElementById("sbDone"),
+      sbInfo=document.getElementById("sbInfo"),
+      audioURL=null, haveAudio=false, stampStack=[];
+
+  audioIn.addEventListener("change",function(e){
+    var f=e.target.files[0]; if(!f)return;
+    if(audioURL)URL.revokeObjectURL(audioURL);
+    audioURL=URL.createObjectURL(f); player.src=audioURL; haveAudio=true; updateAudioUI();
+    document.getElementById("miniplay").classList.add("show");
+    mpSetPlaying();
+  });
+  player.addEventListener("error",function(){
+    if(currentBookId && player.error){
+      syncHint.textContent="⚠ Could not load audio from this book's linked URL — check the link or upload it manually below.";
+    }
+  });
+
+  function hasTimes(){ return lineTimes.some(function(t){return t!=null;}); }
+  function stampedCount(){ return lineTimes.filter(function(t){return t!=null;}).length; }
+  function persistTimings(){
+    if(currentBookId){
+      var b=findBook(currentBookId);
+      if(b){ b.timings=lineTimes.slice(); saveLibrary(); }
+    } else if(textHash){
+      timings[textHash]=lineTimes.slice(); saveTimings();
+    }
+  }
+  function clearPersistedTimings(){
+    if(currentBookId){
+      var b=findBook(currentBookId);
+      if(b){ b.timings=currentLines.map(function(){return null;}); saveLibrary(); }
+    } else if(textHash){
+      delete timings[textHash]; saveTimings();
+    }
+  }
+
+  function updateAudioUI(){
+    if(!haveAudio){ syncToggle.classList.add("hidden"); clearTimes.classList.add("hidden");
+      syncHint.textContent="Load an audio file to read along."; return; }
+    syncToggle.classList.remove("hidden");
+    clearTimes.classList.toggle("hidden", !hasTimes());
+    if(hasTimes()){ syncToggle.textContent="Redo line timings"; syncHint.textContent="Timings set — press play and the text follows along."; }
+    else{ syncToggle.textContent="Set line timings"; syncHint.textContent="One-time setup: play, then tap each line as it's spoken."; }
+  }
+  syncToggle.addEventListener("click",function(){ startSync(); });
+  clearTimes.addEventListener("click",function(){
+    if(!confirm("Clear the line timings for this text?"))return;
+    lineTimes=currentLines.map(function(){return null;}); clearPersistedTimings();
+    clearActive(); reader.querySelectorAll(".line.stamped").forEach(function(el){el.classList.remove("stamped");});
+    updateAudioUI();
+  });
+
+  function startSync(){
+    syncing=true; stampStack=[];
+    lineTimes=currentLines.map(function(){return null;});
+    reader.querySelectorAll(".line.stamped").forEach(function(el){el.classList.remove("stamped");});
+    clearActive();
+    document.body.classList.add("syncing");
+    syncHint.textContent="";
+    updateSbInfo();
+    window.scrollTo({top:0,behavior:"smooth"});
+    player.currentTime=0;
+    player.play().then(setSbPlaying).catch(function(){ setSbPlaying(); });
+  }
+  function stopSync(){
+    syncing=false; document.body.classList.remove("syncing");
+    persistTimings();
+    updateAudioUI();
+  }
+  function updateSbInfo(){
+    var n=stampedCount(), total=currentLines.length;
+    sbInfo.textContent="Line "+n+" of "+total+" · tap each line as it's spoken";
+  }
+  function stampLine(i){
+    if(lineTimes[i]==null) stampStack.push(i);
+    else { var pos=stampStack.indexOf(i); if(pos>=0) stampStack.splice(pos,1); stampStack.push(i); }
+    lineTimes[i]=player.currentTime;
+    var el=lineEls[i]; if(el){ el.classList.add("stamped"); el.classList.remove("flash");
+      void el.offsetWidth; el.classList.add("flash"); }
+    persistTimings();
+    updateSbInfo();
+  }
+  sbUndo.addEventListener("click",function(){
+    if(!stampStack.length){ sbInfo.textContent="Nothing to undo yet"; return; }
+    var i=stampStack.pop(); lineTimes[i]=null;
+    if(lineEls[i]) lineEls[i].classList.remove("stamped");
+    persistTimings();
+    updateSbInfo();
+  });
+  sbDone.addEventListener("click",function(){ player.pause(); stopSync(); });
+  sbPlay.addEventListener("click",function(){
+    if(player.paused){ player.play().then(setSbPlaying).catch(setSbPlaying); }
+    else { player.pause(); setSbPlaying(); }
+  });
+  function setSbPlaying(){ sbPlay.textContent = player.paused ? "▶ Play" : "⏸ Pause"; }
+  player.addEventListener("play", setSbPlaying);
+  player.addEventListener("pause", setSbPlaying);
+
+  /* ============== MINI PLAYER (draggable) ============== */
+  var miniplay=document.getElementById("miniplay"),
+      mpPlay=document.getElementById("mpPlay"), mpTime=document.getElementById("mpTime"),
+      mpSeek=document.getElementById("mpSeek"), seeking=false;
+  function fmt(s){ s=Math.floor(s||0); var m=Math.floor(s/60); var ss=s%60; return m+":"+(ss<10?"0":"")+ss; }
+  function mpSetPlaying(){ mpPlay.textContent = player.paused ? "▶" : "⏸"; }
+  mpPlay.addEventListener("click",function(){
+    if(player.paused){ player.play().catch(function(){}); } else { player.pause(); }
+    mpSetPlaying();
+  });
+  player.addEventListener("play", mpSetPlaying);
+  player.addEventListener("pause", mpSetPlaying);
+  player.addEventListener("timeupdate",function(){
+    if(!seeking){
+      var d=player.duration||0;
+      mpTime.textContent=fmt(player.currentTime)+" / "+fmt(d);
+      if(d) mpSeek.value=Math.round(player.currentTime/d*1000);
+    }
+  });
+  player.addEventListener("loadedmetadata",function(){ mpTime.textContent="0:00 / "+fmt(player.duration); });
+  mpSeek.addEventListener("input",function(){ seeking=true; });
+  mpSeek.addEventListener("change",function(){
+    var d=player.duration||0; if(d) player.currentTime=mpSeek.value/1000*d; seeking=false;
+  });
+
+  (function enableDrag(){
+    var dragging=false, offX=0, offY=0;
+    function posFromClient(cx,cy){
+      var r=miniplay.getBoundingClientRect();
+      var x=cx-offX, y=cy-offY;
+      var maxX=window.innerWidth-r.width-4, maxY=window.innerHeight-r.height-4;
+      x=Math.max(4,Math.min(maxX,x)); y=Math.max(4,Math.min(maxY,y));
+      miniplay.style.left=x+"px"; miniplay.style.top=y+"px";
+      miniplay.style.bottom="auto"; miniplay.style.transform="none";
+    }
+    function startDrag(cx,cy){
+      var r=miniplay.getBoundingClientRect();
+      offX=cx-r.left; offY=cy-r.top; dragging=true;
+      miniplay.style.cursor="grabbing";
+    }
+    miniplay.addEventListener("mousedown",function(e){
+      if(e.target.closest("button") || e.target.closest("input")) return;
+      startDrag(e.clientX,e.clientY); e.preventDefault();
+    });
+    window.addEventListener("mousemove",function(e){
+      if(!dragging)return; posFromClient(e.clientX,e.clientY);
+    });
+    window.addEventListener("mouseup",function(){ if(dragging){dragging=false; miniplay.style.cursor="grab";} });
+
+    miniplay.addEventListener("touchstart",function(e){
+      if(e.target.closest("button") || e.target.closest("input")) return;
+      var t=e.touches[0]; startDrag(t.clientX,t.clientY);
+    },{passive:true});
+    miniplay.addEventListener("touchmove",function(e){
+      if(!dragging)return; var t=e.touches[0]; posFromClient(t.clientX,t.clientY); e.preventDefault();
+    },{passive:false});
+    miniplay.addEventListener("touchend",function(){ dragging=false; miniplay.style.cursor="grab"; });
+  })();
+
+  player.addEventListener("timeupdate",function(){
+    if(syncing || !hasTimes())return;
+    var t=player.currentTime, idx=-1;
+    for(var i=0;i<lineTimes.length;i++){ if(lineTimes[i]==null)continue; if(lineTimes[i]<=t)idx=i; }
+    setActive(idx);
+  });
+  function setActive(idx){
+    if(idx===activeLineIdx)return; clearActive(); activeLineIdx=idx;
+    if(idx>=0 && lineEls[idx]){ lineEls[idx].classList.add("active");
+      var r=lineEls[idx].getBoundingClientRect();
+      if(r.top<90||r.bottom>window.innerHeight-40) lineEls[idx].scrollIntoView({behavior:"smooth",block:"center"});
+    }
+  }
+  function clearActive(){ lineEls.forEach(function(el){ el.classList.remove("active"); }); activeLineIdx=-1; }
+
+  /* ============== BACKUP ============== */
+  document.getElementById("exportBtn").addEventListener("click",function(){
+    var payload={lang:currentLang,words:words,timings:timings,snaps:snaps};
+    var blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+    var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="polyglot_"+currentLang+"_backup.json"; a.click();
+  });
+  document.getElementById("importIn").addEventListener("change",function(e){
+    var f=e.target.files[0]; if(!f)return; var rd=new FileReader();
+    rd.onload=function(){ try{ var d=JSON.parse(rd.result);
+      var w=d.words||d, tm=d.timings||{}, sn=d.snaps||[];
+      Object.keys(w).forEach(function(k){ words[k]=w[k]; });
+      Object.keys(tm).forEach(function(k){ timings[k]=tm[k]; });
+      if(Array.isArray(sn) && sn.length) snaps=sn;
+      saveWords(); saveTimings(); saveSnaps(); if(currentLines.length)render(); else refreshStats();
+      alert("Backup imported. Total words now: "+Object.keys(words).length);
+    }catch(err){ alert("Could not read that backup file."); } };
+    rd.readAsText(f,"utf-8");
+  });
+  document.getElementById("resetBtn").addEventListener("click",function(){
+    if(!confirm("Delete ALL saved words, meanings, timings, and progress for "+langMeta(currentLang).name+" on this device?"))return;
+    words={}; timings={}; snaps=[]; saveWords(); saveTimings(); saveSnaps();
+    if(currentLines.length)render(); else refreshStats();
+  });
+
+  /* ============== GITHUB GIST CLOUD SYNC ============== */
+  var GIST_TOKEN_KEY="polyglot.gist.token", GIST_ID_KEY="polyglot.gist.id", GIST_AUTO_KEY="polyglot.gist.auto";
+  var GIST_FILENAME="polyglot_reader_backup.json";
+  var gistToken=localStorage.getItem(GIST_TOKEN_KEY)||"";
+  var gistId=localStorage.getItem(GIST_ID_KEY)||"";
+  var autoSyncOn=localStorage.getItem(GIST_AUTO_KEY)==="1";
+
+  document.getElementById("gistToken").value=gistToken;
+  document.getElementById("gistId").value=gistId;
+  document.getElementById("autoSyncChk").checked=autoSyncOn;
+
+  function gistStatus(msg,isErr){
+    var el=document.getElementById("gistStatus");
+    el.textContent=msg; el.style.color=isErr?"#a33":"var(--muted)";
+  }
+
+  document.getElementById("gistSaveCreds").addEventListener("click",function(){
+    gistToken=document.getElementById("gistToken").value.trim();
+    gistId=document.getElementById("gistId").value.trim();
+    localStorage.setItem(GIST_TOKEN_KEY,gistToken);
+    localStorage.setItem(GIST_ID_KEY,gistId);
+    gistStatus("Credentials saved.");
+  });
+  document.getElementById("autoSyncChk").addEventListener("change",function(e){
+    autoSyncOn=e.target.checked; localStorage.setItem(GIST_AUTO_KEY,autoSyncOn?"1":"0");
+  });
+
+  function collectAllLangData(){
+    var out={};
+    LANGS.forEach(function(l){
+      out[l.code]={
+        words: loadJSON(keyFor(l.code,"words"), l.code===currentLang?words:{}),
+        timings: loadJSON(keyFor(l.code,"timings"), l.code===currentLang?timings:{}),
+        snaps: loadJSON(keyFor(l.code,"snaps"), l.code===currentLang?snaps:[]),
+        library: loadJSON(keyFor(l.code,"library"), l.code===currentLang?library:[]),
+        wordStats: loadJSON(keyFor(l.code,"wordStats"), l.code===currentLang?wordStats:{})
+      };
+    });
+    out[currentLang]={words:words,timings:timings,snaps:snaps,library:library,wordStats:wordStats};
+    return out;
+  }
+  function applyAllLangData(data){
+    LANGS.forEach(function(l){
+      var d=data[l.code]; if(!d)return;
+      localStorage.setItem(keyFor(l.code,"words"),JSON.stringify(d.words||{}));
+      localStorage.setItem(keyFor(l.code,"timings"),JSON.stringify(d.timings||{}));
+      localStorage.setItem(keyFor(l.code,"snaps"),JSON.stringify(d.snaps||[]));
+      localStorage.setItem(keyFor(l.code,"library"),JSON.stringify(d.library||[]));
+      // wordStats is derived, not trusted from the remote blob -- recompute it locally
+      // from the (now-synced) library so it can never drift or need its own merge logic.
+      var stats=computeWordStatsForLibrary(l.code, d.library||[]);
+      localStorage.setItem(keyFor(l.code,"wordStats"),JSON.stringify(stats));
+    });
+    loadLangData();
+    if(currentLines.length) render(); else refreshStats();
+  }
+
+  function gistHeaders(){
+    var auth = gistToken.startsWith("github_pat_") ? ("Bearer " + gistToken) : ("token " + gistToken);
+    return {
+      "Authorization": auth,
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "Content-Type": "application/json"
+    };
+  }
+
+  function pushToCloud(silent){
+    if(!gistToken || !gistId){ if(!silent) gistStatus("Set token + gist ID first.",true); return Promise.resolve(); }
+    var payload=collectAllLangData();
+    var body={ files:{} }; body.files[GIST_FILENAME]={ content: JSON.stringify(payload,null,2) };
+    if(!silent) gistStatus("Pushing…");
+    return fetch("https://api.github.com/gists/"+gistId,{
+      method:"PATCH", headers:gistHeaders(), body:JSON.stringify(body)
+    }).then(function(r){
+      if(!r.ok) throw new Error("HTTP " + r.status + " " + r.statusText);
+      if(!silent) gistStatus("Pushed to cloud ✓ "+new Date().toLocaleTimeString());
+    }).catch(function(err){
+      gistStatus("Push failed: "+err.message,true);
+    });
+  }
+
+  function pullFromCloud(){
+    if(!gistToken || !gistId){ gistStatus("Set token + gist ID first.",true); return; }
+    gistStatus("Pulling…");
+    fetch("https://api.github.com/gists/"+gistId,{ method:"GET", headers:gistHeaders() })
+      .then(function(r){
+        if(!r.ok) throw new Error("HTTP " + r.status + " " + r.statusText);
+        return r.json();
+      })
+      .then(function(data){
+        var f=data.files && data.files[GIST_FILENAME];
+        if(!f){ gistStatus("Gist found, but file '"+GIST_FILENAME+"' doesn't exist yet. Push first!",true); return; }
+        var parsed=JSON.parse(f.content);
+        applyAllLangData(parsed);
+        gistStatus("Pulled from cloud ✓ "+new Date().toLocaleTimeString());
+      }).catch(function(err){
+        gistStatus("Pull failed: "+err.message+" (Check token & ID)",true);
+      });
+  }
+  document.getElementById("gistPush").addEventListener("click",function(){ pushToCloud(false); });
+  document.getElementById("gistPull").addEventListener("click",function(){ pullFromCloud(); });
+
+  var autoSyncTimer=null;
+  function scheduleAutoSync(){
+    if(!autoSyncOn || !gistToken || !gistId) return;
+    if(autoSyncTimer) clearTimeout(autoSyncTimer);
+    autoSyncTimer=setTimeout(function(){ pushToCloud(true); }, 1500);
+  }
+
+  /* ============== INIT ============== */
+  loadLangData();
+  populateLangSelect();
+  applyDirection();
+  document.getElementById("inputHint").textContent="Tip: paste, or upload a .txt file.";
+  maybeAutoSnapshot();
+  refreshStats();
+})();
+</script>
+</body>
+</html>
